@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoaks Hunter — Berburu Kebenaran di Dunia Maya</title>
+    <!-- Memuat font Orbitron (untuk judul) dan Inter (untuk teks umum) -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* ==============================
+        CSS KUSTOM & RESPONSIVITAS
+        ==============================
+        */
+        :root {
+            --color-bg-dark: #0f0f3d;
+            --color-bg-light: #1c1c6e;
+            --color-primary: #00e0ff;
+            --color-hoax: #ff4d4d;
+            --color-fact: #52ff52;
+            --color-shadow: rgba(0, 224, 255, 0.5);
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-bg-dark);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            background-image: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-light) 100%);
+            overflow: hidden; 
+        }
+
+        /* Struktur Utama Game */
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--color-bg-light);
+            border: 2px solid var(--color-primary);
+            border-radius: 16px;
+            box-shadow: 0 0 30px var(--color-shadow), 0 0 10px var(--color-primary) inset;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            min-height: 600px;
+        }
+
+        /* Judul Digital */
+        .title-neon {
+            font-family: var(--font-display);
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            color: var(--color-primary);
+            text-shadow: 0 0 5px var(--color-primary), 0 0 10px var(--color-primary), 0 0 20px rgba(0, 224, 255, 0.7);
+            margin-bottom: 20px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        /* Tombol */
+        .game-button {
+            font-family: var(--font-display);
+            background-color: transparent;
+            color: var(--color-primary);
+            border: 2px solid var(--color-primary);
+            padding: 12px 25px;
+            margin: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            box-shadow: 0 0 8px var(--color-shadow);
+        }
+
+        .game-button:hover:not(:disabled) {
+            background-color: var(--color-primary);
+            color: var(--color-bg-dark);
+            box-shadow: 0 0 20px var(--color-primary);
+            transform: translateY(-2px);
+        }
+        
+        /* Tombol disabled */
+        .game-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none;
+        }
+
+        /* Tombol Aksi (Hoaks/Fakta) */
+        .action-button {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            flex-grow: 1;
+            margin: 10px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #hoax-btn { border-color: var(--color-hoax); color: var(--color-hoax); }
+        #hoax-btn:hover:not(:disabled) { background-color: var(--color-hoax); color: white; }
+
+        #fact-btn { border-color: var(--color-fact); color: var(--color-fact); }
+        #fact-btn:hover:not(:disabled) { background-color: var(--color-fact); color: var(--color-bg-dark); }
+
+        /* HUD (Skor & Waktu) */
+        #hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--color-primary);
+        }
+
+        .hud-item {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            color: white;
+        }
+
+        .hud-value {
+            color: var(--color-primary);
+            font-size: 1.5rem;
+            margin-left: 5px;
+            display: inline-block;
+            transition: transform 0.1s ease;
+        }
+        
+        /* High Score di Menu */
+        #high-score-display {
+            font-family: var(--font-display);
+            color: var(--color-fact);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        /* Kartu Berita */
+        #news-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            border-radius: 12px;
+            margin: 40px 0;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            line-height: 1.4;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            animation: slideInUp 0.5s ease-out;
+            transition: all 0.3s ease-out;
+        }
+
+        /* Animasi Feedback */
+        @keyframes correctFeedback {
+            0% { background: rgba(82, 255, 82, 0.8); transform: scale(1); opacity: 1; }
+            100% { background: rgba(82, 255, 82, 0); transform: scale(1.1); opacity: 0; }
+        }
+
+        @keyframes wrongFeedback {
+            0% { background: rgba(255, 77, 77, 0.8); transform: scale(1); opacity: 1; }
+            100% { background: rgba(255, 77, 77, 0); transform: scale(1.1); opacity: 0; }
+        }
+
+        #feedback-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 12px;
+            pointer-events: none; /* Penting: agar tidak menutupi tombol */
+            z-index: 10;
+        }
+        .correct-animation { animation: correctFeedback 0.4s ease-out; }
+        .wrong-animation { animation: wrongFeedback 0.4s ease-out; }
+
+        /* Animasi Masuk/Keluar Layar */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            background: var(--color-bg-light);
+            border-radius: 16px;
+            display: none;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            overflow-y: auto; 
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        /* Layar Menu */
+        #menu-screen .title-neon { margin-top: 50px; }
+        #menu-screen p { margin-bottom: 40px; }
+        .mode-buttons { display: flex; flex-direction: column; width: 80%; max-width: 300px; }
+
+        /* Layar Game */
+        #game-screen { justify-content: flex-start; }
+        #game-screen-content { width: 100%; }
+        .action-buttons-wrapper { display: flex; justify-content: space-around; width: 100%; }
+        
+        /* Legal Disclaimer */
+        .legal-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 224, 255, 0.1);
+            border-left: 3px solid var(--color-primary);
+            text-align: left;
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+        
+        /* Ringkasan Hukum di Menu */
+        #legal-summary {
+            font-size: 0.9rem;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            padding: 10px;
+            border: 1px dashed var(--color-shadow);
+        }
+
+        /* Layar Akhir */
+        #end-screen .score-final {
+            font-size: 3rem;
+            font-family: var(--font-display);
+            color: var(--color-fact);
+            text-shadow: 0 0 10px var(--color-fact);
+            margin: 20px 0;
+        }
+
+        /* Responsiveness for small screens */
+        @media (max-width: 600px) {
+            #game-container { min-height: 500px; padding: 10px; }
+            .title-neon { font-size: 1.8rem; margin-top: 20px; }
+            #news-card { font-size: 1rem; padding: 20px; min-height: 100px; margin: 20px 0; }
+            .action-buttons-wrapper { flex-direction: column; }
+            .action-button { margin: 5px; padding: 10px 20px; }
+            .mode-buttons { width: 100%; }
+            /* PENYESUAIAN INI MEMPERBAIKI JUDUL YANG TERPOTONG DI LAYAR KECIL */
+            #menu-screen .title-neon { margin-top: 40px; } 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- -------------------- LAYAR MENU UTAMA -------------------- -->
+        <div id="menu-screen" class="screen active">
+            <h1 class="title-neon">Hoaks Hunter</h1>
+            <h2 class="title-neon" style="font-size: 1.2rem; margin-top: -10px;">Berburu Kebenaran di Dunia Maya</h2>
+            
+            <div id="legal-summary">
+                <p style="font-weight: bold; margin-bottom: 5px;">Tanggung Jawab Digital Anda:</p>
+                <p style="margin: 0;">Jadilah warga digital yang bijak! UUD 1945 Pasal 28F menjamin hak Anda untuk memperoleh informasi yang benar, namun UU ITE Pasal 28 ayat (1) melarang penyebaran berita bohong. Tugas Anda adalah menegakkan kebenaran!</p>
+            </div>
+            
+            <p>Tentukan mana berita yang benar dan mana yang menyesatkan. Jadilah pemburu kebenaran sejati!</p>
+            
+            <div id="high-score-display">Skor Tertinggi: <span id="high-score-value" style="color: var(--color-fact);">0</span></div>
+
+            <div class="mode-buttons">
+                <button class="game-button" onclick="startQuickMode()">⚡ Mode Cepat (Quick Mode)</button>
+                <button class="game-button" onclick="startAdventureMode()">🚀 Mode Level (Adventure Mode)</button>
+            </div>
+            <!-- Landasan Hukum Tetap Tampil -->
+            <div class="legal-box" style="margin-top: 30px;">
+                <p><strong>Landasan Hukum Literasi Digital:</strong></p>
+                <p><strong>UUD 1945 Pasal 28F:</strong> “Setiap orang berhak untuk berkomunikasi dan memperoleh informasi yang benar.”</p>
+                <p><strong>UU ITE Pasal 28 ayat (1):</strong> “Setiap orang dilarang menyebarkan berita bohong dan menyesatkan.”</p>
+            </div>
+        </div>
+
+        <!-- -------------------- LAYAR PERMAINAN -------------------- -->
+        <div id="game-screen" class="screen">
+            <div id="game-screen-content">
+                <div id="hud">
+                    <div class="hud-item">Pemain: <span id="player-name">Anda</span></div>
+                    <div class="hud-item" id="level-display" style="display: none;">Level: <span class="hud-value" id="current-level">1</span></div>
+                    <div class="hud-item" id="time-display" style="display: none;">Waktu: <span class="hud-value" id="current-time">30</span>s</div>
+                    <div class="hud-item">Soal: <span class="hud-value" id="question-index">0</span>/<span id="max-questions-display">10</span></div>
+                    <div class="hud-item">Skor: <span class="hud-value" id="current-score">0</span></div>
+                </div>
+
+                <div id="news-card">
+                    <div id="feedback-overlay"></div>
+                    <p id="news-text">Loading Berita...</p>
+                </div>
+
+                <div class="action-buttons-wrapper">
+                    <button id="hoax-btn" class="action-button game-button" onclick="handleAnswer('Hoaks')" aria-label="Jawab Hoaks">Hoaks</button>
+                    <button id="fact-btn" class="action-button game-button" onclick="handleAnswer('Fakta')" aria-label="Jawab Fakta">Fakta</button>
+                </div>
+            </div>
+
+            <!-- Landasan Hukum Tetap Tampil -->
+            <div class="legal-box" style="margin-top: auto; width: 100%;">
+                <p><strong>UUD 1945 Pasal 28F:</strong> “Setiap orang berhak untuk berkomunikasi dan memperoleh informasi yang benar.”</p>
+                <p><strong>UU ITE Pasal 28 ayat (1):</strong> “Setiap orang dilarang menyebarkan berita bohong dan menyesatkan.”</p>
+            </div>
+        </div>
+
+        <!-- -------------------- LAYAR AKHIR -------------------- -->
+        <div id="end-screen" class="screen">
+            <h1 class="title-neon">Hasil Permainan</h1>
+            <p id="end-message" style="font-size: 1.1rem; line-height: 1.5;">Pesan Akhir.</p>
+            
+            <div id="final-score-container">
+                <p style="font-size: 1.5rem; font-weight: bold;">Skor Total Anda:</p>
+                <span id="final-score" class="score-final">0</span>
+                <p id="high-score-achieved" style="color: var(--color-fact); font-weight: bold; display: none;">SKOR TERTINGGI BARU!</p>
+            </div>
+
+            <!-- Tombol Main Ulang akan memanggil startMode terakhir -->
+            <button class="game-button" onclick="restartGame()">Main Ulang Mode Ini</button>
+            <button class="game-button" onclick="showMenu()">Kembali ke Menu Utama</button>
+
+            <!-- Landasan Hukum Tetap Tampil -->
+            <div class="legal-box" style="margin-top: 50px; width: 100%;">
+                <p><strong>UUD 1945 Pasal 28F:</strong> “Setiap orang berhak untuk berkomunikasi dan memperoleh informasi yang benar.”</p>
+                <p><strong>UU ITE Pasal 28 ayat (1):</strong> “Setiap orang dilarang menyebarkan berita bohong dan menyesatkan.”</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ------------------------------------
+        // 1. DATA DAN KONSTANTA
+        // ------------------------------------
+        const NEWS_DATA = [
+            // =========================================================
+            // DATA ASLI (17 SOAL)
+            // =========================================================
+            // Level 1: Ringan/Umum 
+            { text: "Minum air es secara rutin bisa menyebabkan serangan jantung mendadak.", answer: "Hoaks", level: 1 },
+            { text: "Mengonsumsi air kelapa muda dapat menyembuhkan penyakit COVID-19 tanpa obat.", answer: "Hoaks", level: 1 },
+            { text: "Pemerintah telah menghimbau masyarakat untuk selalu mengecek kebenaran berita melalui situs resmi.", answer: "Fakta", level: 1 },
+            { text: "Buah pisang memiliki kekuatan ajaib yang dapat mengubah golongan darah manusia.", answer: "Hoaks", level: 1 },
+            { text: "Tidur setelah makan berat akan menyebabkan obesitas 10 kali lebih cepat.", answer: "Hoaks", level: 1 },
+            { text: "Memanaskan ulang nasi semalam dapat menghasilkan racun yang berbahaya.", answer: "Hoaks", level: 1 },
+            // Level 2: Sosial & Politik 
+            { text: "UU ITE secara eksplisit melarang penyebaran berita bohong dan menyesatkan yang mengakibatkan kerugian konsumen.", answer: "Fakta", level: 2 },
+            { text: "Berita tentang penemuan gunung emas baru di Jakarta yang dapat membuat semua warga kaya mendadak.", answer: "Hoaks", level: 2 },
+            { text: "Bencana alam seringkali dimanfaatkan oleh pihak tidak bertanggung jawab untuk menyebarkan kepanikan publik.", answer: "Fakta", level: 2 },
+            { text: "Sebuah partai politik mengumumkan bahwa semua hutang rakyat akan dihapuskan jika mereka menang pemilu.", answer: "Hoaks", level: 2 },
+            { text: "Setiap orang berhak untuk berkomunikasi dan memperoleh informasi yang benar, sebagaimana dijamin UUD 1945 Pasal 28F.", answer: "Fakta", level: 2 },
+            { text: "Foto lama dari kerusuhan di negara lain disebarkan dengan keterangan seolah-olah terjadi di Indonesia hari ini.", answer: "Hoaks", level: 2 },
+            // Level 3: Menyesatkan Halus 
+            { text: "Penelitian baru membuktikan bahwa semua vaksin mengandung microchip untuk memata-matai warga.", answer: "Hoaks", level: 3 },
+            { text: "Sebuah video lama tentang demonstrasi besar disebarkan dengan narasi sebagai kejadian 'hari ini'.", answer: "Hoaks", level: 3 },
+            { text: "Klaim 'Ahli Gizi Dunia' mengatakan diet puasa dapat memperpanjang umur hingga 50 tahun (tanpa menyebutkan sumber valid).", answer: "Hoaks", level: 3 },
+            { text: "Laporan resmi BPS menunjukkan penurunan angka pengangguran yang signifikan tahun ini.", answer: "Fakta", level: 3 },
+            { text: "Penyebaran informasi tanpa klarifikasi dapat dijerat UU ITE, meskipun informasi tersebut bukan fitnah.", answer: "Fakta", level: 3 },
+            // =========================================================
+            // 50 VARIASI SOAL BARU DITAMBAHKAN
+            // =========================================================
+
+            // --- LEVEL 1 TAMBAHAN (Umum, Kesehatan, Mitos Harian) ---
+            // Hoaks
+            { text: "Mandi malam dengan air dingin bisa menyebabkan penyakit paru-paru basah permanen.", answer: "Hoaks", level: 1 },
+            { text: "Makan mie instan yang dicampur dengan nasi adalah penyebab utama kanker lambung.", answer: "Hoaks", level: 1 },
+            { text: "Wortel dapat secara ajaib menghilangkan mata minus total tanpa perlu kacamata atau operasi.", answer: "Hoaks", level: 1 },
+            { text: "Suhu normal tubuh manusia selalu tepat 37.0°C, tidak boleh kurang atau lebih.", answer: "Hoaks", level: 1 },
+            { text: "Saat tidur, manusia menelan rata-rata delapan laba-laba per tahun tanpa disadari.", answer: "Hoaks", level: 1 },
+            { text: "Ponsel yang diisi daya semalaman pasti akan meledak atau merusak baterai secara permanen.", answer: "Hoaks", level: 1 },
+            { text: "Makan buah segera setelah minum susu akan menyebabkan keracunan makanan serius.", answer: "Hoaks", level: 1 },
+            { text: "Daun pepaya yang direbus dan diminum airnya bisa menyembuhkan semua jenis kanker.", answer: "Hoaks", level: 1 },
+            { text: "Hanya dengan menekan ibu jari kaki, semua jenis sakit kepala migrain bisa hilang total.", answer: "Hoaks", level: 1 },
+            { text: "Semua makanan organik dijamin 100% lebih bergizi dan bebas pestisida daripada makanan non-organik.", answer: "Hoaks", level: 1 },
+            { text: "Kopi dapat menyebabkan tulang keropos dan osteoporosis parah pada usia muda.", answer: "Hoaks", level: 1 },
+            { text: "Minum 8 gelas air putih sehari adalah aturan wajib mutlak yang harus dipatuhi semua orang di segala kondisi.", answer: "Hoaks", level: 1 },
+            { text: "Vaksin flu dapat menyebabkan kamu terkena flu, sehingga lebih baik tidak divaksin.", answer: "Hoaks", level: 1 },
+            
+            // Fakta
+            { text: "Mencuci tangan dengan sabun dan air mengalir adalah cara efektif mencegah penyebaran kuman dan virus.", answer: "Fakta", level: 1 },
+            { text: "Minyak jelantah yang digunakan berulang kali dapat membentuk senyawa karsinogenik yang berbahaya.", answer: "Fakta", level: 1 },
+            { text: "Menjaga pola makan seimbang dan tidur cukup penting untuk meningkatkan daya tahan tubuh.", answer: "Fakta", level: 1 },
+            { text: "Paparan sinar matahari pagi dapat membantu tubuh memproduksi Vitamin D alami.", answer: "Fakta", level: 1 },
+            { text: "Mengonsumsi terlalu banyak gula rafinasi secara teratur dapat meningkatkan risiko diabetes.", answer: "Fakta", level: 1 },
+
+            // --- LEVEL 2 TAMBAHAN (Sosial, Ekonomi, Hukum) ---
+            // Hoaks
+            { text: "Pesan berantai mengklaim Bank Indonesia akan menarik semua uang kertas lama secara mendadak besok pagi.", answer: "Hoaks", level: 2 },
+            { text: "Semua media sosial utama di Indonesia akan ditutup total selama satu bulan untuk 'pemilu digital'.", answer: "Hoaks", level: 2 },
+            { text: "Telah beredar kabar bahwa pemerintah akan menerapkan pajak sebesar 50% untuk setiap transaksi melalui e-wallet.", answer: "Hoaks", level: 2 },
+            { text: "Viralnya klaim bahwa vaksin COVID-19 mengandung microchip yang dikendalikan oleh pihak asing.", answer: "Hoaks", level: 2 },
+            { text: "Sebuah pesan WhatsApp menjanjikan hadiah uang tunai ratusan juta dari Kepolisian tanpa undian resmi.", answer: "Hoaks", level: 2 },
+            { text: "Foto lama dari negara konflik disebarkan dengan narasi seolah-olah terjadi kerusuhan parah di ibu kota Indonesia hari ini.", answer: "Hoaks", level: 2 },
+            { text: "Semua impor beras dari luar negeri dipastikan mengandung plastik yang berbahaya bagi tubuh.", answer: "Hoaks", level: 2 },
+            { text: "Berita bahwa seluruh sekolah dasar di Indonesia diwajibkan belajar bahasa asing tingkat lanjut mulai kelas satu.", answer: "Hoaks", level: 2 },
+            { text: "Klaim bahwa KTP elektronik dapat digunakan sebagai alat pembayaran utama mata uang digital tanpa konfirmasi bank.", answer: "Hoaks", level: 2 },
+            { text: "Narasi yang menyebutkan bahwa satu-satunya solusi krisis ekonomi adalah mencetak uang baru sebanyak-banyaknya.", answer: "Hoaks", level: 2 },
+            { text: "Pesan berantai yang meminta pengguna men-forward pesan ke 10 kontak agar akun mereka tidak diblokir.", answer: "Hoaks", level: 2 },
+            { text: "Klaim bahwa semua penyakit modern, seperti kanker, disebabkan oleh paparan gelombang 5G.", answer: "Hoaks", level: 2 },
+            { text: "Info viral tentang penutupan jalan tol utama di Jawa selama sebulan penuh tanpa ada pengumuman resmi dari Jasa Marga.", answer: "Hoaks", level: 2 },
+            { text: "Seorang artis terkenal membagikan tips investasi yang menjanjikan untung 100% dalam 24 jam tanpa risiko.", answer: "Hoaks", level: 2 },
+            { text: "Berita tentang penemuan fosil dinosaurus raksasa di halaman belakang rumah warga di Bandung.", answer: "Hoaks", level: 2 },
+            
+            // Fakta
+            { text: "Setiap warga negara Indonesia yang berusia 17 tahun atau lebih wajib memiliki KTP elektronik.", answer: "Fakta", level: 2 },
+            { text: "Pencatutan nama institusi resmi atau pejabat untuk penyebaran berita bohong adalah pelanggaran hukum.", answer: "Fakta", level: 2 },
+            { text: "Bank Indonesia (BI) memiliki kewenangan tunggal untuk mengatur dan menjaga kestabilan nilai Rupiah.", answer: "Fakta", level: 2 },
+            { text: "Informasi resmi mengenai kebijakan publik biasanya diumumkan melalui portal pemerintah atau siaran pers resmi.", answer: "Fakta", level: 2 },
+            { text: "Pemungutan suara pada pemilihan umum di Indonesia dilakukan secara langsung, umum, bebas, rahasia, jujur, dan adil.", answer: "Fakta", level: 2 },
+
+            // --- LEVEL 3 TAMBAHAN (Menyesatkan, Manipulasi Data/Konteks) ---
+            // Hoaks (Semua bersifat menyesatkan atau manipulasi)
+            { text: "Laporan yang menggunakan data statistik yang benar, tetapi menyajikan kesimpulan yang bertentangan dengan konteks aslinya.", answer: "Hoaks", level: 3 },
+            { text: "Klaim 'data ilmiah' yang menunjukkan peningkatan kasus, padahal peningkatannya hanyalah noise statistik kecil.", answer: "Hoaks", level: 3 },
+            { text: "Video wawancara yang diedit secara halus, menghilangkan konteks penting sehingga pernyataan narasumber berubah makna.", answer: "Hoaks", level: 3 },
+            { text: "Narasi bahwa obat herbal tertentu disetujui FDA, padahal yang disetujui hanya bahan dasarnya, bukan produk jadinya.", answer: "Hoaks", level: 3 },
+            { text: "Grafik yang menggunakan skala Y yang dimanipulasi (misalnya dimulai dari 90) untuk membesar-besarkan perubahan kecil data.", answer: "Hoaks", level: 3 },
+            { text: "Klaim bahwa suhu bumi tidak naik, dengan mengutip data dari stasiun cuaca yang berada di tengah kota panas.", answer: "Hoaks", level: 3 },
+            { text: "Artikel berita yang menggunakan judul sensasional dan provokatif, padahal isinya hanya opini tanpa data pendukung.", answer: "Hoaks", level: 3 },
+            { text: "Penggunaan istilah teknis medis yang rumit untuk membenarkan pengobatan alternatif yang belum teruji secara klinis.", answer: "Hoaks", level: 3 },
+            { text: "Teori konspirasi yang mengklaim 99% ilmuwan keliru tentang konsep dasar fisika, mengutip satu jurnal yang tidak direview.", answer: "Hoaks", level: 3 },
+            { text: "Pesan berantai yang menyertakan foto dan nama seorang ahli, padahal ahli tersebut telah lama meninggal atau menyangkal klaim tersebut.", answer: "Hoaks", level: 3 },
+            { text: "Pernyataan yang secara statistik melebih-lebihkan bahwa 100% perokok akan meninggal karena kanker paru-paru.", answer: "Hoaks", level: 3 },
+            { text: "Klaim bahwa perusahaan X telah memenangkan semua tender proyek besar pemerintah, padahal hanya memenangkan satu tender kecil.", answer: "Hoaks", level: 3 },
+            { text: "Video 'deepfake' seorang tokoh masyarakat yang membuat pengakuan kontroversial, disebarkan sebagai konten asli.", answer: "Hoaks", level: 3 },
+            { text: "Daftar panjang regulasi baru yang viral, padahal regulasi-regulasi tersebut sudah lama dicabut atau direvisi.", answer: "Hoaks", level: 3 },
+            { text: "Penyebaran data inflasi yang sudah disesuaikan secara musiman tanpa menyebutkan penyesuaian tersebut, sehingga terlihat lebih rendah.", answer: "Hoaks", level: 3 },
+        ];
+
+        // ------------------------------------
+        // 2. STATE GLOBAL GAME
+        // ------------------------------------
+        let gameState = {
+            mode: null,          // 'quick' atau 'adventure'
+            currentLevel: 1,
+            questionIndex: 0,
+            score: 0,
+            questions: [],
+            timer: null,
+            timeRemaining: 0,
+            maxQuestions: 0,
+        };
+
+        // ------------------------------------
+        // 3. REFERENSI ELEMEN DOM
+        // ------------------------------------
+        const elements = {
+            // Screens
+            menuScreen: document.getElementById('menu-screen'),
+            gameScreen: document.getElementById('game-screen'),
+            endScreen: document.getElementById('end-screen'),
+            // HUD & Game
+            newsText: document.getElementById('news-text'),
+            questionIndex: document.getElementById('question-index'),
+            maxQuestionsDisplay: document.getElementById('max-questions-display'),
+            currentScore: document.getElementById('current-score'),
+            timeDisplay: document.getElementById('time-display'),
+            currentTime: document.getElementById('current-time'),
+            levelDisplay: document.getElementById('level-display'),
+            currentLevel: document.getElementById('current-level'),
+            feedbackOverlay: document.getElementById('feedback-overlay'),
+            hoaxBtn: document.getElementById('hoax-btn'),
+            factBtn: document.getElementById('fact-btn'),
+            // End Screen
+            endMessage: document.getElementById('end-message'),
+            finalScore: document.getElementById('final-score'),
+            highScoreAchieved: document.getElementById('high-score-achieved'),
+            finalScoreContainer: document.getElementById('final-score-container'),
+            // Menu
+            highScoreValue: document.getElementById('high-score-value')
+        };
+        
+        // ------------------------------------
+        // 4. AUDIO UTILITIES (Web Audio API)
+        // ------------------------------------
+        // Inisialisasi AudioContext hanya jika tersedia
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        /**
+         * Memainkan efek suara sederhana tanpa file eksternal.
+         * @param {string} type 'correct', 'wrong', atau 'click'
+         */
+        function playSound(type) {
+            if (!audioContext) return;
+            // Penting: pastikan AudioContext dalam keadaan 'running' di Chrome
+            if (audioContext.state === 'suspended') {
+                 audioContext.resume();
+            }
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            switch (type) {
+                case 'correct':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(880, audioContext.currentTime); 
+                    gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.15);
+                    break;
+                case 'wrong':
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(110, audioContext.currentTime); 
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+                    break;
+                case 'click':
+                default:
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.05);
+                    break;
+            }
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // ------------------------------------
+        // 5. KONTROL TAMPILAN DAN STATE
+        // ------------------------------------
+
+        /**
+         * Mengatur ulang semua state game.
+         */
+        function resetGameState() {
+            console.debug('resetGameState dipanggil.');
+            clearInterval(gameState.timer);
+            // Mengatur ulang state ke nilai awal yang konsisten
+            Object.assign(gameState, {
+                currentLevel: 1,
+                questionIndex: 0,
+                score: 0,
+                questions: [],
+                timer: null,
+                timeRemaining: 0,
+                maxQuestions: 0,
+            });
+            updateScoreDisplay(0);
+            elements.highScoreAchieved.style.display = 'none'; 
+        }
+
+        /**
+         * Memperbarui skor di HUD.
+         * @param {number} newScore Nilai skor yang baru.
+         */
+        function updateScoreDisplay(newScore) {
+            gameState.score = newScore;
+            elements.currentScore.textContent = gameState.score;
+            console.debug(`Skor diperbarui: ${gameState.score}`);
+            
+            // Animasi skor saat diupdate
+            // Gunakan requestAnimationFrame untuk memastikan DOM direpaint sebelum reset kelas
+            requestAnimationFrame(() => {
+                elements.currentScore.classList.remove('score-update');
+                void elements.currentScore.offsetWidth; 
+                elements.currentScore.classList.add('score-update');
+            });
+        }
+
+        /**
+         * Mengatur tampilan antar layar.
+         * @param {string} screenId ID layar tujuan ('menu-screen', 'game-screen', 'end-screen').
+         */
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            const nextScreen = document.getElementById(screenId);
+            if (nextScreen) {
+                // Sembunyikan semua layar, lalu tampilkan yang baru
+                document.querySelectorAll('.screen').forEach(screen => {
+                    screen.style.display = 'none';
+                });
+                
+                nextScreen.style.display = 'flex';
+                // Gunakan requestAnimationFrame untuk memastikan transisi dimulai
+                requestAnimationFrame(() => nextScreen.classList.add('active'));
+            }
+        }
+        
+        /**
+         * Menampilkan menu utama dan memuat high score.
+         */
+        function showMenu() {
+            resetGameState();
+            loadHighScore();
+            showScreen('menu-screen');
+        }
+
+        /**
+         * Memuat skor tertinggi dari LocalStorage.
+         */
+        function loadHighScore() {
+            const storedScore = localStorage.getItem('hoaksHunterHighScore');
+            // Pastikan menggunakan parseInt
+            const highScore = storedScore ? parseInt(storedScore, 10) : 0;
+            elements.highScoreValue.textContent = highScore;
+            return highScore;
+        }
+
+        /**
+         * Menyimpan skor jika skor saat ini lebih tinggi dari yang tersimpan.
+         * @returns {boolean} True jika high score baru tercapai.
+         */
+        function saveHighScore() {
+            const currentHighScore = loadHighScore();
+            if (gameState.score > currentHighScore) {
+                localStorage.setItem('hoaksHunterHighScore', gameState.score.toString());
+                console.debug(`High Score Baru Ditetapkan: ${gameState.score}`);
+                return true;
+            }
+            return false;
+        }
+
+        // ------------------------------------
+        // 6. LOGIKA MODE PERMAINAN
+        // ------------------------------------
+        
+        /**
+         * Mengacak urutan array.
+         * @param {Array} array Array untuk diacak.
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        /**
+         * Memulai Quick Mode.
+         */
+        function startQuickMode() {
+            resetGameState();
+            gameState.mode = 'quick';
+            gameState.maxQuestions = 10;
+            
+            let allNews = [...NEWS_DATA];
+            shuffleArray(allNews);
+            // Ambil 10 soal acak dari pool yang besar
+            gameState.questions = allNews.slice(0, gameState.maxQuestions);
+
+            elements.timeDisplay.style.display = 'flex';
+            elements.levelDisplay.style.display = 'none';
+            elements.maxQuestionsDisplay.textContent = gameState.maxQuestions;
+
+            showScreen('game-screen');
+            nextQuestion();
+        }
+
+        /**
+         * Memulai Adventure Mode.
+         */
+        function startAdventureMode() {
+            resetGameState();
+            gameState.mode = 'adventure';
+
+            elements.timeDisplay.style.display = 'none';
+            elements.levelDisplay.style.display = 'flex';
+            
+            showScreen('game-screen');
+            loadLevel(1);
+        }
+        
+        /**
+         * Memuat soal untuk level tertentu di Adventure Mode.
+         * @param {number} level Tingkat level yang akan dimuat (1, 2, atau 3).
+         */
+        function loadLevel(level) {
+            if (level > 3) {
+                // Semua level selesai
+                return endGame();
+            }
+            
+            gameState.currentLevel = level;
+            elements.currentLevel.textContent = level;
+
+            // Filter data untuk level saat ini
+            let levelQuestions = NEWS_DATA.filter(n => n.level === level);
+            shuffleArray(levelQuestions);
+            
+            // Ambil 10 soal pertama dari levelQuestions jika ada lebih dari 10
+            gameState.questions = levelQuestions.slice(0, 10); 
+            
+            // Set maxQuestions untuk level ini
+            gameState.maxQuestions = gameState.questions.length;
+            gameState.questionIndex = 0; // Reset index soal per level
+            updateScoreDisplay(0); // Reset skor per level (Adventure Mode)
+            elements.maxQuestionsDisplay.textContent = gameState.maxQuestions;
+            console.debug(`Memuat Level ${level}. Jumlah soal: ${gameState.maxQuestions}`);
+            
+            nextQuestion();
+        }
+
+        /**
+         * Memulai ulang mode permainan saat ini.
+         */
+        function restartGame() {
+            const mode = gameState.mode;
+            // Panggil fungsi start mode yang sesuai
+            if (mode === 'quick') startQuickMode();
+            else if (mode === 'adventure') startAdventureMode();
+        }
+
+        // ------------------------------------
+        // 7. LOGIKA INTI PERMAINAN
+        // ------------------------------------
+
+        /**
+         * Mengelola timer Quick Mode.
+         * @param {number} seconds Waktu awal timer.
+         */
+        function startTimer(seconds) {
+            clearInterval(gameState.timer); // Pastikan timer sebelumnya dibersihkan
+            gameState.timeRemaining = seconds;
+            elements.currentTime.textContent = gameState.timeRemaining;
+            console.debug('Timer dimulai.');
+
+            gameState.timer = setInterval(() => {
+                gameState.timeRemaining--;
+                elements.currentTime.textContent = gameState.timeRemaining;
+
+                if (gameState.timeRemaining <= 0) {
+                    clearInterval(gameState.timer);
+                    console.debug('Waktu habis.');
+                    // Jika waktu habis, anggap salah secara otomatis
+                    handleAnswer('LanjutOtomatis'); 
+                }
+            }, 1000);
+        }
+
+        /**
+         * Memuat soal berikutnya atau mengakhiri permainan/level.
+         */
+        function nextQuestion() {
+            clearInterval(gameState.timer); // Hentikan timer soal sebelumnya
+
+            if (gameState.questionIndex >= gameState.questions.length) {
+                // Semua soal level/mode selesai
+                if (gameState.mode === 'adventure') {
+                    // Skor minimal 50% untuk melanjutkan
+                    const minScoreToPass = gameState.maxQuestions * 10 * 0.5; 
+                    if (gameState.score >= minScoreToPass) {
+                         // Lanjut ke level berikutnya
+                         loadLevel(gameState.currentLevel + 1);
+                         return;
+                    } else {
+                         // Gagal level
+                         endGame(`Mode Level Gagal: Kamu harus mencapai skor minimal ${minScoreToPass} (50%) untuk lanjut dari Level ${gameState.currentLevel}.`);
+                         return;
+                    }
+                }
+                
+                // Jika Quick Mode atau Adventure Level 3 Selesai
+                endGame();
+                return;
+            }
+            
+            const currentQ = gameState.questions[gameState.questionIndex];
+            elements.newsText.textContent = currentQ.text;
+            
+            // Update HUD
+            const displayIndex = gameState.questionIndex + 1;
+            elements.questionIndex.textContent = displayIndex;
+            
+            // Mulai timer untuk Quick Mode
+            if (gameState.mode === 'quick') {
+                startTimer(30);
+            }
+            
+            // Aktifkan kembali tombol jika sebelumnya dinonaktifkan
+            elements.hoaxBtn.disabled = false;
+            elements.factBtn.disabled = false;
+
+            // Animasi masuk kartu berita 
+            elements.newsText.parentElement.style.animation = 'none';
+            void elements.newsText.parentElement.offsetWidth; 
+            elements.newsText.parentElement.style.animation = 'slideInUp 0.5s ease-out';
+            console.debug(`Soal ke-${displayIndex} dimuat.`);
+        }
+
+        /**
+         * Memproses jawaban pemain.
+         * @param {string} answer Jawaban pemain ('Hoaks', 'Fakta', atau 'LanjutOtomatis').
+         */
+        function handleAnswer(answer) {
+            // Nonaktifkan tombol untuk mencegah double-click
+            elements.hoaxBtn.disabled = true;
+            elements.factBtn.disabled = true;
+            
+            clearInterval(gameState.timer); // Hentikan timer segera
+            
+            const currentQ = gameState.questions[gameState.questionIndex];
+            
+            // Cek kebenaran jawaban
+            const isCorrect = (answer !== 'LanjutOtomatis') && (currentQ && currentQ.answer === answer);
+            
+            let scoreChange = 0;
+            let animationClass = '';
+
+            if (isCorrect) {
+                scoreChange = 10;
+                animationClass = 'correct-animation';
+                playSound('correct');
+            } else {
+                // Poin dikurangi jika salah atau waktu habis ('LanjutOtomatis')
+                scoreChange = -5;
+                animationClass = 'wrong-animation';
+                playSound('wrong');
+            }
+            
+            // Terapkan efek visual
+            elements.feedbackOverlay.classList.add(animationClass);
+            
+            // Update skor (menggunakan variabel global yang konsisten)
+            const newScore = gameState.score + scoreChange;
+            updateScoreDisplay(newScore);
+            console.debug(`Jawaban: ${answer}, Benar: ${isCorrect}, Perubahan Skor: ${scoreChange}`);
+
+            // Tunggu animasi feedback selesai sebelum lanjut
+            setTimeout(() => {
+                elements.feedbackOverlay.classList.remove('correct-animation', 'wrong-animation');
+                
+                gameState.questionIndex++;
+                nextQuestion();
+            }, 500);
+        }
+
+        /**
+         * Menampilkan layar akhir game.
+         * @param {string | null} failMessage Pesan kegagalan (untuk Adventure Mode gagal).
+         */
+        function endGame(failMessage = null) {
+            clearInterval(gameState.timer);
+            showScreen('end-screen');
+            
+            elements.finalScore.textContent = gameState.score;
+            elements.finalScoreContainer.style.display = 'block';
+
+            let finalMessage = '';
+            let newHighScore = false;
+
+            if (failMessage) {
+                // Pesan Gagal Level (Adventure Mode)
+                elements.finalScoreContainer.style.display = 'none'; // Sembunyikan skor karena gagal level
+                finalMessage = failMessage;
+                elements.finalScore.style.color = 'var(--color-hoax)';
+            } else if (gameState.mode === 'adventure' && gameState.currentLevel === 3) {
+                // Adventure Mode Selesai Total (Level 3 berhasil)
+                newHighScore = saveHighScore();
+                finalMessage = "Selamat! Kamu telah menaklukkan semua level di Mode Level. \n\nJadilah pemburu kebenaran sejati.";
+                elements.finalScore.style.color = 'var(--color-fact)';
+            } else {
+                // Quick Mode Selesai
+                newHighScore = saveHighScore();
+                finalMessage = "Selamat! Kamu resmi menjadi Hoaks Hunter. \n\nJangan sebar sebelum periksa kebenarannya.";
+                elements.finalScore.style.color = 'var(--color-fact)';
+            }
+            
+            elements.endMessage.innerHTML = finalMessage.replace(/\n/g, '<br>');
+            elements.highScoreAchieved.style.display = newHighScore ? 'block' : 'none';
+            console.debug(`Game Berakhir. Skor Akhir: ${gameState.score}`);
+        }
+
+        // ------------------------------------
+        // 8. INITIALIZATION
+        // ------------------------------------
+        window.onload = () => {
+             // Pastikan layar menu aktif saat pertama kali load dan high score dimuat
+            showMenu();
+        }
+    </script>
+</body>
+</html>
